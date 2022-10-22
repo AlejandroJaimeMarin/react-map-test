@@ -1,23 +1,60 @@
-import logo from './logo.svg';
+import React, { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import { Map, TileLayer } from 'react-leaflet';
 import './App.css';
+import 'leaflet/dist/leaflet.css';
+
+import nationalParks from './national-parks.json';
+import belenes from './belenes-2021.json';
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+// Importing images from locally stored assets to address a bug
+// in CodeSandbox: https://github.com/codesandbox/codesandbox-client/issues/3845
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('./images/marker-icon-2x.png'),
+  iconUrl: require('./images/marker-icon.png'),
+  shadowUrl: require('./images/marker-shadow.png')
+});
+
+// When importing into your own app outside of CodeSandbox, you can import directly
+// from the leaflet package like below
+//
+// L.Icon.Default.mergeOptions({
+//   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+//   iconUrl: require('leaflet/dist/images/marker-icon.png'),
+//   shadowUrl: require('leaflet/dist/images/marker-shadow.png')
+// });
 
 function App() {
+  const mapRef = useRef();
+
+  useEffect(() => {
+    const { current = {} } = mapRef;
+    const { leafletElement: map } = current;
+
+    if ( !map ) return;
+
+    const parksGeoJson = new L.GeoJSON(belenes, {
+      onEachFeature: (feature = {}, layer) => {
+        const { properties = {} } = feature;
+        const { belen } = properties;
+
+        if ( !belen ) return;
+
+        layer.bindPopup(`<p>${belen}</p>`);
+      }
+    });
+
+    parksGeoJson.addTo(map);
+  }, [])
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Map ref={mapRef} center={[39.50, -98.35]} zoom={4}>
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; <a href=&quot;https://www.openstreetmap.org/copyright&quot;>OpenStreetMap</a> contributors" />
+      </Map>
     </div>
   );
 }
