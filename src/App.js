@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Map, TileLayer } from 'react-leaflet';
 import './App.css';
@@ -28,7 +28,19 @@ L.Icon.Default.mergeOptions({
 // });
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
   const mapRef = useRef();
+  const [belenesData, setBelenesData] = useState(null);
+
+  useEffect(() => {
+     fetch("https://datosabiertos.malaga.eu/recursos/alcaldia/belenes2021/da_belenes2021-4326.geojson")
+      .then((response) => response.json())
+      .then((belenes) => {  
+        console.log(belenes)
+        setBelenesData(belenes.features);
+        setIsLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     const { current = {} } = mapRef;
@@ -36,7 +48,7 @@ function App() {
 
     if ( !map ) return;
 
-    const parksGeoJson = new L.GeoJSON(belenes, {
+    const parksGeoJson = new L.GeoJSON(belenesData, {
       onEachFeature: (feature = {}, layer) => {
         const { properties = {} } = feature;
         const { belen } = properties;
@@ -48,11 +60,19 @@ function App() {
     });
 
     parksGeoJson.addTo(map);
-  }, [])
+  })
+
+  if (isLoading) { // ⬅️ si está cargando, mostramos un texto que lo indique
+    return (
+      <div className="App">
+        <h1>Cargando...</h1>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
-      <Map ref={mapRef} center={[39.50, -98.35]} zoom={4}>
+      <Map ref={mapRef} center={[ 36.7268, -4.4361]} zoom={13}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; <a href=&quot;https://www.openstreetmap.org/copyright&quot;>OpenStreetMap</a> contributors" />
       </Map>
     </div>
